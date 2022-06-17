@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 clap = { version = "3.2.5", features = ["derive"]}
 anyhow = "1.0.57"
+oauth2 = "4.2.0"
+webbrowser = "0.7.1"

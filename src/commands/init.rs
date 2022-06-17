@@ -1,3 +1,6 @@
-pub fn run() {
-    println!("Init command")
+use crate::init;
+use anyhow::Result;
+
+pub fn run() -> Result<()> {
+    init::run()
 }
