@@ -1,7 +1,5 @@
 use btg_cli::cli::{exec, Cli, Command};
 
-use std::env;
-
 use anyhow::Result;
 use clap::Parser;
 

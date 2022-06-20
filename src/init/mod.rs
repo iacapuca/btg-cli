@@ -9,7 +9,10 @@ use oauth2::{
     RedirectUrl, RefreshToken, Scope, TokenResponse, TokenUrl,
 };
 
+use chrono::{DateTime, Duration, Utc};
+
 use crate::init::http::http_server_get_params;
+use crate::settings::settings::Settings;
 
 pub static CLIENT_ID: &str = "5ce9d13f-e5d9-4cbb-bc81-e4e6fc3b99b2";
 pub static CLIENT_SECRET: &str =
@@ -101,7 +104,30 @@ pub fn run() -> Result<()> {
         )),
     };
 
-    println!("{:?}", token_response);
+    let expiration_time_value = match Utc::now().checked_add_signed(Duration::from_std(expires_in)?)
+    {
+        Some(time) => time,
+        None => anyhow::bail!(display_error_info(
+            "Failed to calculate access_token expiration time."
+        )),
+    };
+    let expiration_time_value = expiration_time_value.to_rfc3339();
+
+    let refresh_token_value = match token_response.refresh_token() {
+        Some(token) => token,
+        None => anyhow::bail!(display_error_info("Failed to receive refresh token.")),
+    };
+
+    // Configure settings with new token
+    let settings = Settings::OAuthTokenAuth {
+        oauth_token: TokenResponse::access_token(&token_response)
+            .secret()
+            .to_string(),
+        refresh_token: refresh_token_value.secret().to_string(),
+        expiration_time: expiration_time_value,
+    };
+
+    println!("{:?}", settings);
 
     Ok(())
 }
