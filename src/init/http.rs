@@ -94,6 +94,5 @@ pub async fn http_server_get_params() -> Result<String> {
         }
     })
     .await?;
-    println!("{:?}", params);
     Ok(params)
 }

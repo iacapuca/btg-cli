@@ -14,3 +14,7 @@ reqwest = { version = "0.11", features = ["json"] }
 tokio = { version = "1", features = ["full"] }
 hyper = { version = "0.14.7", features = ["http2", "server", "runtime"] }
 log = "0.4.17"
+serde = "1.0.137"
+serde_derive = "1.0.137"
+serde_json = "1.0.81"
+chrono = "0.4.19"

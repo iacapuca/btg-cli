@@ -12,7 +12,7 @@ use oauth2::{
 use chrono::{DateTime, Duration, Utc};
 
 use crate::init::http::http_server_get_params;
-use crate::settings::settings::Settings;
+use crate::settings::settings::OAuthTokenAuth;
 
 pub static CLIENT_ID: &str = "5ce9d13f-e5d9-4cbb-bc81-e4e6fc3b99b2";
 pub static CLIENT_SECRET: &str =
@@ -119,7 +119,7 @@ pub fn run() -> Result<()> {
     };
 
     // Configure settings with new token
-    let settings = Settings::OAuthTokenAuth {
+    let settings = OAuthTokenAuth {
         oauth_token: TokenResponse::access_token(&token_response)
             .secret()
             .to_string(),
