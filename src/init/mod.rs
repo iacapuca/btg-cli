@@ -11,6 +11,8 @@ use oauth2::{
 
 use chrono::{DateTime, Duration, Utc};
 
+use crate::commands::config::global_config;
+use crate::commands::revoke::invalidate_oauth_token;
 use crate::init::http::http_server_get_params;
 use crate::settings::settings::OAuthTokenAuth;
 
@@ -127,7 +129,78 @@ pub fn run() -> Result<()> {
         expiration_time: expiration_time_value,
     };
 
-    println!("{:?}", settings);
+    invalidate_oauth_token("`btg-cli init`".to_string());
+    global_config(&settings)?;
+
+    Ok(())
+}
+
+pub fn check_update_oauth_token(settings: &mut OAuthTokenAuth) -> Result<()> {
+    log::debug!("Refreshing access token..");
+    let expiration_time = DateTime::parse_from_rfc3339(&settings.expiration_time)?;
+    let current_time = Utc::now();
+    // Note: duration can panic if the time elapsed (in seconds) cannot be stored in i64
+    let duration = current_time.signed_duration_since(expiration_time);
+
+    // Access token expired
+    // Refresh token before 20 seconds from actual expiration time to avoid minute details
+    if duration.num_seconds() >= -20 {
+        let auth_url = AuthUrl::new(AUTH_URL.to_string())?;
+        let token_url = TokenUrl::new(TOKEN_URL.to_string())?;
+        let redirect_url = RedirectUrl::new(CALLBACK_URL.to_string())?;
+
+        // Create oauth2 client
+        let client = BasicClient::new(
+            ClientId::new(CLIENT_ID.to_string()),
+            None,
+            auth_url,
+            Some(token_url),
+        )
+        .set_redirect_uri(redirect_url)
+        .set_auth_type(AuthType::RequestBody);
+
+        // Exchange refresh token with new access token
+        let refresh_token = &settings.refresh_token;
+        let token_response = client
+            .exchange_refresh_token(&RefreshToken::new(refresh_token.to_string()))
+            .request(http_client)?;
+
+        // Set new access token
+        let access_token = token_response.access_token().secret();
+        settings.oauth_token = access_token.to_string();
+
+        // Set new refresh token
+        let new_refresh_token = token_response.refresh_token();
+        if let Some(token) = new_refresh_token {
+            settings.refresh_token = token.secret().to_string();
+        } else {
+            anyhow::bail!(display_error_info(
+                "Failed to receive refresh token while updating access token."
+            ))
+        }
+
+        // Set new expiration time
+        let expires_in = match token_response.expires_in() {
+            Some(time) => time,
+            None => anyhow::bail!(display_error_info(
+                "Failed to receive access_token expire time while updating access token."
+            )),
+        };
+
+        let expiration_time = match Utc::now().checked_add_signed(Duration::from_std(expires_in)?) {
+            Some(time) => time,
+            None => anyhow::bail!(display_error_info(
+                "Failed to calculate access_token expiration time while updating access token."
+            )),
+        };
+
+        let expiration_time = expiration_time.to_rfc3339();
+
+        settings.expiration_time = expiration_time;
+
+        // Update settings on the system keyring
+        settings.to_keyring()?
+    }
 
     Ok(())
 }
