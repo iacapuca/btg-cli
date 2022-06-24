@@ -207,6 +207,6 @@ pub fn check_update_oauth_token(settings: &mut OAuthTokenAuth) -> Result<()> {
 
 // Adds additional info besides an error message
 pub fn display_error_info(error_msg: &str) -> String {
-    let error_info = format!("{} Please run `btg-cli login` again. If the error persists, consider reporting the issue through `btg-cli report`.", error_msg);
+    let error_info = format!("{} Please run `btg-cli init` again. If the error persists, consider reporting the issue through `btg-cli report`.", error_msg);
     error_info
 }

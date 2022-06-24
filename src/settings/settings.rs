@@ -19,6 +19,7 @@ impl OAuthTokenAuth {
             // Let caller handle possible errors
             check_update_oauth_token(settings)?;
         }
+
         new_settings
     }
 
@@ -40,11 +41,8 @@ impl OAuthTokenAuth {
     }
 
     pub fn to_keyring(&self) -> Result<()> {
-        println!("{:?}", &self);
-
-        let json = self.as_json();
         let entry = keyring::Entry::new("btg-cli", "OAuthTokenAuth");
-        entry.set_password(&json?)?;
+        entry.set_password(&self.as_json()?)?;
         Ok(())
     }
 }

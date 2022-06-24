@@ -1,12 +1,14 @@
+pub mod accounts;
 pub mod init;
 
 pub mod exec {
+    pub use super::accounts::accounts;
     pub use super::init::init;
 }
 
-use clap::{AppSettings, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 
-#[derive(clap::Parser, Debug)]
+#[derive(Parser, Debug)]
 #[clap(name = "btg-cli")]
 #[clap(about = "A CLI to access the BTG Empresas API")]
 pub struct Cli {
@@ -14,8 +16,25 @@ pub struct Cli {
     pub command: Command,
 }
 
-#[derive(clap::Subcommand, Debug)]
+#[derive(Subcommand, Debug)]
 pub enum Command {
     /// Authenticate btg-cli with your BTG Empresas account
     Init,
+    Accounts {
+        #[clap(short, long)]
+        /// Optional BTG Empresas account_id
+        account_id: Option<String>,
+
+        #[clap(long)]
+        /// Output as a csv
+        csv: bool,
+
+        #[clap(long)]
+        /// Output as a json
+        json: bool,
+
+        #[clap(long)]
+        /// Output as a table
+        table: bool,
+    },
 }

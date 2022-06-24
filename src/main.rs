@@ -13,5 +13,11 @@ fn run() -> Result<()> {
 
     match args.command {
         Command::Init {} => exec::init(),
+        Command::Accounts {
+            account_id,
+            csv,
+            json,
+            table,
+        } => exec::accounts(account_id, csv, json, table),
     }
 }
