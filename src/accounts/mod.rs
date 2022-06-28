@@ -1,9 +1,7 @@
 use crate::settings::settings::OAuthTokenAuth;
-use crate::terminal::message::{Message, StdOut};
-use crate::terminal::styles;
 
 use serde::{Deserialize, Serialize};
-use tabled::{object::Columns, Format, Modify, Style, Table, Tabled};
+use tabled::{Table, Tabled};
 
 use anyhow::Result;
 
@@ -22,12 +20,6 @@ struct Account {
     status: String,
 }
 
-#[derive(Serialize)]
-enum AccountType {
-    Accounts(Vec<Account>),
-    Account(Account),
-}
-
 static ACCOUNTS_URL: &str = "https://api.sandbox.empresas.btgpactual.com/v1/accounts";
 
 #[tokio::main]
@@ -38,25 +30,40 @@ pub async fn run(
     json: bool,
     table: bool,
 ) -> Result<()> {
-    if account_id.is_none() {
-        let accounts = fetch_all_accounts(settings).await?;
-        if csv {
-            display_as_csv(AccountType::Accounts(accounts))?;
-        } else if json && !csv {
-            display_as_json(AccountType::Accounts(accounts))?;
+    // TODO: Refactor as the following way
+    match &account_id {
+        Some(account_id) => {
+            let account = fetch_account_by_id(&settings, account_id).await?;
+            let accounts = vec![account];
+            if csv {
+                display_as_csv(&accounts)?;
+            }
+            if json {
+                display_as_json(&accounts)?;
+            }
+            if table {
+                display_as_table(&accounts)?;
+            }
         }
-    } else {
-        let account: Account = fetch_account_by_id(settings, account_id.unwrap()).await?;
-        if csv {
-            display_as_csv(AccountType::Account(account))?;
-        } else if json && !csv {
-            display_as_json(AccountType::Account(account))?;
+        None => {
+            let accounts = fetch_all_accounts(&settings).await?;
+            if csv {
+                display_as_csv(&accounts)?;
+            }
+            if json {
+                display_as_json(&accounts)?;
+            }
+
+            if table {
+                display_as_table(&accounts)?;
+            }
         }
     }
+
     Ok(())
 }
 
-async fn fetch_account_by_id(settings: OAuthTokenAuth, account_id: String) -> Result<Account> {
+async fn fetch_account_by_id(settings: &OAuthTokenAuth, account_id: &String) -> Result<Account> {
     let account: Account = reqwest::Client::new()
         .get(format!("{}/{}", ACCOUNTS_URL, account_id))
         .header("Accept", "application/json")
@@ -71,7 +78,7 @@ async fn fetch_account_by_id(settings: OAuthTokenAuth, account_id: String) -> Re
     Ok(account)
 }
 
-async fn fetch_all_accounts(settings: OAuthTokenAuth) -> Result<Vec<Account>> {
+async fn fetch_all_accounts(settings: &OAuthTokenAuth) -> Result<Vec<Account>> {
     let accounts: Vec<Account> = reqwest::Client::new()
         .get(ACCOUNTS_URL)
         .header("Accept", "application/json")
@@ -86,21 +93,27 @@ async fn fetch_all_accounts(settings: OAuthTokenAuth) -> Result<Vec<Account>> {
     Ok(accounts)
 }
 
-fn display_as_csv(accounts: AccountType) -> Result<()> {
+fn display_as_csv(accounts: &Vec<Account>) -> Result<()> {
     let mut wtr = csv::Writer::from_writer(io::stdout());
     wtr.serialize(accounts)?;
     wtr.flush()?;
     Ok(())
 }
 
-fn display_as_json(accounts: AccountType) -> Result<()> {
+fn display_as_json(accounts: &Vec<Account>) -> Result<()> {
     println!("{:?}", serde_json::to_string(&accounts)?);
+    Ok(())
+}
+
+fn display_as_table(accounts: &Vec<Account>) -> Result<()> {
+    let table = Table::new(accounts);
+    println!("{}", table);
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::accounts::{display_as_csv, Account};
+    use super::*;
 
     #[test]
     fn render_as_csv() {
@@ -126,6 +139,6 @@ mod tests {
                 status: "INACTIVE".to_string(),
             },
         ];
-        display_as_csv(crate::accounts::AccountType::Accounts(accounts)).unwrap();
+        display_as_csv(&accounts).unwrap();
     }
 }
