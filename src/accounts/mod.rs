@@ -1,4 +1,5 @@
-use crate::settings::settings::OAuthTokenAuth;
+use crate::client::Client;
+use crate::{client::BASE_URL, settings::settings::OAuthTokenAuth};
 
 use serde::{Deserialize, Serialize};
 use tabled::{Table, Tabled};
@@ -9,7 +10,7 @@ use std::io;
 
 #[derive(Serialize, Deserialize, Debug, Tabled)]
 #[serde(rename_all = "camelCase")]
-struct Account {
+pub struct Account {
     account_id: String,
     tax_id: String,
     bank_code: String,
@@ -20,8 +21,6 @@ struct Account {
     status: String,
 }
 
-static ACCOUNTS_URL: &str = "https://api.sandbox.empresas.btgpactual.com/v1/accounts";
-
 #[tokio::main]
 pub async fn run(
     settings: OAuthTokenAuth,
@@ -30,11 +29,12 @@ pub async fn run(
     json: bool,
     table: bool,
 ) -> Result<()> {
-    // TODO: Refactor as the following way
+    let client: Client = Client::new(&settings.oauth_token)?;
+
     match &account_id {
         Some(account_id) => {
-            let account = fetch_account_by_id(&settings, account_id).await?;
-            let accounts = vec![account];
+            let account: Account = client.get_account(account_id).await?;
+            let accounts: Vec<Account> = vec![account];
             if csv {
                 display_as_csv(&accounts)?;
             }
@@ -46,7 +46,8 @@ pub async fn run(
             }
         }
         None => {
-            let accounts = fetch_all_accounts(&settings).await?;
+            let accounts: Vec<Account> = client.list_accounts().await?;
+
             if csv {
                 display_as_csv(&accounts)?;
             }
@@ -61,36 +62,6 @@ pub async fn run(
     }
 
     Ok(())
-}
-
-async fn fetch_account_by_id(settings: &OAuthTokenAuth, account_id: &String) -> Result<Account> {
-    let account: Account = reqwest::Client::new()
-        .get(format!("{}/{}", ACCOUNTS_URL, account_id))
-        .header("Accept", "application/json")
-        .header(
-            "Authorization",
-            "Bearer ".to_owned() + &settings.oauth_token,
-        )
-        .send()
-        .await?
-        .json()
-        .await?;
-    Ok(account)
-}
-
-async fn fetch_all_accounts(settings: &OAuthTokenAuth) -> Result<Vec<Account>> {
-    let accounts: Vec<Account> = reqwest::Client::new()
-        .get(ACCOUNTS_URL)
-        .header("Accept", "application/json")
-        .header(
-            "Authorization",
-            "Bearer ".to_owned() + &settings.oauth_token,
-        )
-        .send()
-        .await?
-        .json()
-        .await?;
-    Ok(accounts)
 }
 
 fn display_as_csv(accounts: &Vec<Account>) -> Result<()> {
@@ -109,6 +80,23 @@ fn display_as_table(accounts: &Vec<Account>) -> Result<()> {
     let table = Table::new(accounts);
     println!("{}", table);
     Ok(())
+}
+
+pub async fn list(client: &reqwest::Client) -> Result<Vec<Account>> {
+    let url = format!("{base_url}/accounts", base_url = BASE_URL);
+    let builder = client.get(url.as_str());
+    let res = builder.send().await?;
+    Ok(res.json().await?)
+}
+
+pub async fn get(client: &reqwest::Client, account_id: &str) -> Result<Account> {
+    let url = format!(
+        "{base_url}/accounts/{account_id}",
+        base_url = BASE_URL,
+        account_id = account_id
+    );
+    let resp = client.get(url.as_str()).send().await?.json().await?;
+    Ok(resp)
 }
 
 #[cfg(test)]
