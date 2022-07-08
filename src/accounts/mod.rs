@@ -55,12 +55,16 @@ pub async fn run(
                 display_as_json(&accounts)?;
             }
 
-            if table {
-                display_as_table(&accounts)?;
-            }
+            display_data(&accounts)?;
         }
     }
 
+    Ok(())
+}
+
+fn display_data<T: Tabled>(data: &[T]) -> Result<()> {
+    let table = Table::new(data);
+    println!("{}", table);
     Ok(())
 }
 
