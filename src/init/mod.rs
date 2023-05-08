@@ -22,9 +22,13 @@ pub static CLIENT_SECRET: &str =
 pub static AUTH_URL: &str = "https://id.sandbox.btgpactual.com/oauth2/authorize";
 static TOKEN_URL: &str = "https://id.sandbox.btgpactual.com/oauth2/token";
 static CALLBACK_URL: &str = "http://localhost:8000";
-static SCOPES: [&str; 1] = ["openid"];
 
 pub fn run() -> Result<()> {
+    let scopes: [Scope; 2] = [
+        Scope::new("openid".to_string()),
+        Scope::new("empresas.btgpactual.com/accounts.readonly".to_string()),
+    ];
+
     let auth_url = AuthUrl::new(AUTH_URL.to_string())?;
     let token_url = TokenUrl::new(TOKEN_URL.to_string())?;
     let redirect_url = RedirectUrl::new(CALLBACK_URL.to_string())?;
@@ -47,7 +51,7 @@ pub fn run() -> Result<()> {
         .set_pkce_challenge(pkce_challenge);
 
     // User did provide some scopes
-    client_state = client_state.add_scope(Scope::new("openid".to_string()));
+    client_state = client_state.add_scopes(scopes);
 
     client_state = client_state.add_scope(Scope::new("offline_access".to_string()));
     let (auth_url, csrf_state) = client_state.url();
