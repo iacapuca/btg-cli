@@ -1,7 +1,10 @@
 use anyhow::Result;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
 
-use crate::accounts::{self, Account};
+use crate::{
+    accounts::{self, Account},
+    balances::{self, Balance},
+};
 
 pub static BASE_URL: &str = "https://api.sandbox.empresas.btgpactual.com/v1";
 
@@ -32,5 +35,15 @@ impl Client {
     /// Returns a account according to the provided account_id
     pub async fn get_account(&self, account_id: &str) -> Result<Account> {
         accounts::get(&self.http_client, account_id).await
+    }
+
+    /// Return all balances
+    pub async fn list_balances(&self) -> Result<Vec<Balance>> {
+        balances::list(&self.http_client).await
+    }
+
+    /// Returns a balance according to the provided account_id
+    pub async fn get_balance(&self, account_id: &str) -> Result<Balance> {
+        balances::get(&self.http_client, account_id).await
     }
 }

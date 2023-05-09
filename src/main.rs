@@ -19,5 +19,6 @@ fn run() -> Result<()> {
             json,
             table,
         } => exec::accounts(account_id, csv, json, table),
+        Command::Balances { account_id } => exec::balances(account_id),
     }
 }

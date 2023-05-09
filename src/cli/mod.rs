@@ -1,8 +1,10 @@
 pub mod accounts;
+pub mod balances;
 pub mod init;
 
 pub mod exec {
     pub use super::accounts::accounts;
+    pub use super::balances::balances;
     pub use super::init::init;
 }
 
@@ -36,5 +38,10 @@ pub enum Command {
         #[clap(long)]
         /// Output as a table
         table: bool,
+    },
+    Balances {
+        #[clap(short, long)]
+        /// Optional BTG Empresas account_id
+        account_id: Option<String>,
     },
 }

@@ -2,7 +2,7 @@ use crate::client::Client;
 use crate::{client::BASE_URL, settings::settings::OAuthTokenAuth};
 
 use serde::{Deserialize, Serialize};
-use tabled::{Table, Tabled};
+use tabled::{Style, Table, Tabled};
 
 use anyhow::Result;
 
@@ -63,7 +63,7 @@ pub async fn run(
 }
 
 fn display_data<T: Tabled>(data: &[T]) -> Result<()> {
-    let table = Table::new(data);
+    let table: Table = Table::new(data).with(Style::modern());
     println!("{}", table);
     Ok(())
 }
@@ -81,7 +81,7 @@ fn display_as_json(accounts: &Vec<Account>) -> Result<()> {
 }
 
 fn display_as_table(accounts: &Vec<Account>) -> Result<()> {
-    let table = Table::new(accounts);
+    let table: Table = Table::new(accounts).with(Style::modern());
     println!("{}", table);
     Ok(())
 }

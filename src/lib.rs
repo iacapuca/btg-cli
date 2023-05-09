@@ -1,4 +1,5 @@
 pub mod accounts;
+pub mod balances;
 pub mod cli;
 pub mod client;
 pub mod commands;
